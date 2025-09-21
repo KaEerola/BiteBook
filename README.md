@@ -8,7 +8,13 @@
 - Käyttäjä pystyy luokittelemaan ravintolan (esim. pizzeria, bistro, nepalilainen, aasialainen)
 - Käyttäjä voi arvioida ravintolan ja kommentoida ravintolaa, ravintolasta näytetään komentit ja keskimääräinen arvio
 
-
+# 2 välipalautus
+- Käyttäjän luominen ja sisäänkijrautuminen on mahdollista
+- Ravintolan lisääminen, poistaminen ja muokkaus on mahdollista
+- Arvostelun lisääminen ja poistaminen on mahdollista
+- Sovellukseen lisättyjen ravintoloiden tarkastelu on mahdollista
+- Ravintoloiden haku ravintolan nimien tai nimen osien perusteella mahdollista
+  
 # Asennusohjeet
 Aluksi luo tiedosto database.db tiedoston schema.sql perusteella
 <pre>$ sqlite3 database.db < schema.sql </pre>
