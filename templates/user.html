@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ user.username }}{% endblock %}
+
+{% block content %}
+<h2>{{ user.username }}</h2>
+    <p>Rekisteröitynyt: {{ user.created_at }}</p>
+    {% if reviews %}
+    <p>Luotuja arvosteluja: {{ reviews | count }}</p>
+    {% else %}
+    <p>Luotuja arvosteluja: 0</p>
+    {% endif %}
+    {% if restaurants %}
+    <p>Luotuja ravintoloita: {{ restaurants | count }}</p>
+    {% else %}
+    <p>Luotuja ravintoloita: 0</p>
+    {% endif %}
+
+    {% if restaurants %}
+        <h2>Lisätyt ravintolat</h2>
+        <ul>
+            {% for restaurant in restaurants %}
+                <li><a href="/restaurant/{{ restaurant.id }}">{{ restaurant.name }}</a></li>
+                {% if session.user_id == restaurant.user_id %}
+                <p>
+                    <a href="/edit_restaurant/{{ restaurant.id }}">
+                        <button type="button">Muokkaa ravintolaa</button>
+                    </a>
+                </p>
+
+                <p>
+                    <a href="/remove_restaurant/{{ restaurant.id }}"> 
+                        <button type="button">Poista ravintola</button>
+                    </a>
+                </p>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Ei ravintoloita</p>
+    {% endif %}
+
+    {% if reviews %}
+        <h2>Käyttäjän arvostelut</h2>
+        <ul>
+            {% for review in reviews %}
+                <li><a href="/restaurant/{{ review.restaurant_id }}">{{ review.restaurant_name }}</a>: {{ review.comment }} - {{ review.rating }} tähteä</li>
+                {% if session.user_id == review.user_id %}
+                    <p>
+                        <a href="/edit_review/{{ review.id }}">
+                            <button type="button">Muokkaa arvostelua</button>
+                        </a>
+                    </p>
+                    <p>
+                        <a href="/remove_review/{{ review.id }}">
+                            <button type="button">Poista arvostelu</button>
+                        </a>
+                    </p>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Ei arvosteluja</p>
+    {% endif %}
+{% endblock %}

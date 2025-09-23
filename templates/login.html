@@ -1,20 +1,5 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-  <title>Kirjautuminen</title>
-</head>
-
-<body>
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-      <div class="flashes">
-      {% for category, message in messages %}
-          <div class="flash {{ category }}">{{ message }}</div>
-      {% endfor %}
-      </div>
-  {% endif %}
-  {% endwith %}
+{% extends "layout.html" %}
+{% block content %}
   {% if session.username %}
   <p>
     Olet kirjautunut nimellä {{ session.username }}
@@ -41,6 +26,4 @@
     <a href="/">Etusivulle</a>
   </p>
   {% endif %}
-</body>
-
-</html>
+{% endblock %}

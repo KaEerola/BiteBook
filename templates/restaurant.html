@@ -1,41 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ restaurant.name }}</title>
-</head>
-
-<body>
-    <header style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <a href="/">Etusivulle</a>
-            <a href="/restaurants">Selaa ravintoloita</a>
-            <a href="/search_restaurants">Etsi ravintolaa</a>
-            {% if session.username %}
-                <a href="/new_restaurant">Lisää ravintola</a>
-            {% endif %}
-        </div>
-        
-        <div>
-            {% if session.username %}
-                <a>{{ session.username }}</a>
-                <a href="/logout">Kirjaudu ulos</a>
-            {% else %}
-                <a href="/login">Kirjaudu sisään</a>
-                <a href="/register">Rekisteröidy</a>
-            {% endif %}
-        </div>
-    </header>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div class="flashes">
-        {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-        </div>
-    {% endif %}
-    {% endwith %}
-    <h1>{{ restaurant.name }}</h1>
-
+{% extends "layout.html" %}
+{% block content %}
+    <h2>{{ restaurant.name }}</h2>
     <p>Osoite: {{ restaurant.address }}</p>
     <p>Nettisivu: <a href="{{ restaurant.link }}">{{ restaurant.link }}</a></p>
     {% if session.user_id == restaurant.user_id %}
@@ -89,6 +54,4 @@
     {% else %}
     <p>Ei arvosteluja</p>
     {% endif %}
-</body>
-
-</html>
+{% endblock %}

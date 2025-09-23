@@ -3,7 +3,7 @@ import db
 def add_restaurant(name, address, link, user_id):
     sql = "INSERT INTO restaurants (name, address, link, user_id) VALUES (?, ?, ?, ?)"
     db.execute(sql, [name, address, link, user_id])
-    
+
 def get_restaurants():
     sql = """SELECT r.id, r.name, r.address, r.link, user_id
              FROM restaurants r
@@ -30,7 +30,6 @@ def find_restaurant(query):
         ORDER BY name DESC"""
     like = "%" + query + "%"
     return db.query(sql, [like])
-
 
 def add_review(restaurant_id, user_id, rating, comment):
     sql = "INSERT INTO reviews (restaurant_id, user_id, rating, comment) VALUES (?, ?, ?, ?)"

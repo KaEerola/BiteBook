@@ -38,7 +38,7 @@ def create():
     except sqlite3.IntegrityError:
         return "VIRHE: tunnus on jo varattu"
 
-    return redirect("/login")
+    return redirect("/")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -60,34 +60,37 @@ def login():
         
         return "VIRHE: väärä tunnus tai salasana"
 
+
 @app.route("/logout")
 def logout():
     del session["username"]
     del session["user_id"]
-    flash("Olet nyt kirjautunut ulos", "")
     return redirect("/")
 
 @app.route("/new_restaurant", methods=["GET", "POST"])
 def new_restaurants():
     require_login()
-    
-    if request.method == "GET":
+
+    if request.method == "GET": 
+
         return render_template("new_restaurant.html")
-    
+
     if request.method == "POST":
         name = request.form["name"]
         address = request.form["address"]
         link = request.form["link"]
         user_id = session["user_id"]
+
         restaurants.add_restaurant(name, address, link, user_id)
 
-        flash('Ravintola lisätty', "")
-        return redirect("/")
-    
+        restaurant_id = restaurants.find_restaurant(name)[0][0]
+        
+        flash("Ravintola lisätty", "")
+        return redirect("/restaurants")
+
 @app.route("/restaurants")
 def show_restaurants():
     rest = restaurants.get_restaurants()
-    
     return render_template("restaurants.html", restaurants=rest)
 
 @app.route("/restaurant/<int:restaurant_id>")
@@ -107,9 +110,13 @@ def update_restaurant():
     name = request.form["name"]
     address = request.form["address"]
     link = request.form["link"]
+    
     restaurants.update_restaurant(restaurant_id, name, address, link)
-    flash('Ravintolan tiedot päivitetty', "")
+
+    flash('Ravintola päivitetty', "")
+
     return redirect("/restaurants")
+        
     
 @app.route("/remove_restaurant/<int:restaurant_id>", methods=["GET", "POST"])
 def remove_restaurant(restaurant_id):
@@ -123,9 +130,11 @@ def remove_restaurant(restaurant_id):
 @app.route("/search_restaurants")
 def search():
     query = request.args.get("query")
+    
     if query and len(query) < 3:
         flash('Hakusana liian lyhyt', "error")
         return redirect("/search_restaurants")
+    
     if query and len(query) >= 3:
         results = restaurants.find_restaurant(query)
         return render_template("search_restaurants.html", query=query, results=results)
@@ -134,6 +143,8 @@ def search():
     results = []
     return render_template("search_restaurants.html", query="", results=results)
 
+    
+    
 @app.route("/add_review/<int:restaurant_id>", methods=["GET", "POST"])
 def add_review(restaurant_id):
     if request.method == "GET":
@@ -145,7 +156,25 @@ def add_review(restaurant_id):
         rating = request.form["rating"]
         restaurants.add_review(restaurant_id, user_id, rating, comment)
         flash('Arvostelu lisätty', "")
-        return redirect("/restaurant/" + str(restaurant_id))
+        return redirect("/restaurants")
+    
+@app.route("/edit_review/<int:review_id>")
+def edit_review(review_id):
+    review = restaurants.get_review(review_id)
+    restaurant = restaurants.get_restaurant(review["restaurant_id"])
+    return render_template("edit_review.html", review=review, restaurant=restaurant)
+
+@app.route("/update_review", methods = ["POST"])
+def update_review():
+    review_id= request.form["id"]
+    rating = request.form["rating"]
+    comment = request.form["comment"]
+    restaurant_id = request.form["restaurant_id"]
+
+    restaurants.update_review(review_id, rating, comment)
+
+    flash('Arvostelu muokattu', "")
+    return redirect(url_for('show_restaurant', restaurant_id=restaurant_id))
 
 @app.route("/remove_review/<int:review_id>", methods=["GET", "POST"])
 def remove_review(review_id):
@@ -160,3 +189,19 @@ def remove_review(review_id):
         restaurants.remove_review(review_id)
         flash('Arvostelu poistettu', "")
         return redirect(url_for("show_restaurant", restaurant_id=restaurant_id))
+    
+@app.route("/user/<string:username>/")
+def show_user(username):
+    print(">>> show_user route called with:", username)
+    user = users.get_user(username)  
+    
+    if not user:
+        return "VIRHE: käyttäjää ei löydy"
+    
+    user_id = user[0]
+    
+    restaurants = users.get_user_restaurants(user_id)  
+    reviews = users.get_user_reviews(user_id)  
+    
+    return render_template("user.html", user=user, reviews=reviews, restaurants=restaurants)
+
