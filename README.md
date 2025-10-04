@@ -14,6 +14,11 @@
 - Arvostelun lisääminen ja poistaminen on mahdollista
 - Sovellukseen lisättyjen ravintoloiden tarkastelu on mahdollista
 - Ravintoloiden haku ravintolan nimien tai nimen osien perusteella mahdollista
+
+#3 välipalautus
+- Käyttäjäsivut, joissa näkyy lisättyjen tietokohteiden määrä ja erikseen lisätyt tietokohteet
+- Tagi-järjestelmä, jonka avulla voidaan luoda tunnisteita ravintoloille ja poistaa niitä
+- Estetty sovelluksen CSRF-aukko
   
 # Asennusohjeet
 Aluksi luo tiedosto database.db tiedoston schema.sql perusteella
