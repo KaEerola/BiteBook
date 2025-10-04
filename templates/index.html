@@ -5,7 +5,7 @@
   </p>
   {% if session.username %}
   <p>
-    Olet kirjautunut nimellä {{ session.username }}
+    Olet kirjautunut nimellä <a href="/user/{{ session.username}}">{{ session.username }}</a> (<a href="/logout">Kirjaudu ulos</a>).
   </p>
   {% endif %}
 

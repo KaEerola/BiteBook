@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block content %}
-
 <h2>Muokkaa ravintolaa</h2>
 <form action="/update_restaurant" method="post">
     <p>
@@ -16,6 +15,7 @@
         <input type="text" name="link" value="{{ restaurant.link }}" />
     </p>
         <input type="hidden" name="id" value="{{ restaurant.id }}" />
+        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}" />
         <input type="submit" value="Tallenna muutokset" />
 </form>
 <p>

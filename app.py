@@ -1,4 +1,5 @@
 import sqlite3
+import secrets
 from flask import Flask
 from flask import redirect, render_template, request, session, flash, abort, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,6 +13,12 @@ app.secret_key = config.SECRET_KEY
 
 def require_login():
     if "user_id" not in session:
+        abort(403)
+
+def check_csrf():
+    form_token = request.form.get("csrf_token")
+    session_token = session.get("csrf_token")
+    if not form_token or not session_token or form_token != session_token:
         abort(403)
 
 @app.route("/")
@@ -40,24 +47,22 @@ def create():
 
     return redirect("/")
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods = ["GET", "POST"])
 def login():
     if request.method == "GET":
         return render_template("login.html")
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        
         sql = "SELECT id, password_hash FROM users WHERE username = ?"
         result = db.query(sql, [username])
-        
         if result:
             user_id, password_hash = result[0]
             if check_password_hash(password_hash, password):
+                session["csrf_token"] = secrets.token_hex(16)
                 session["username"] = username
                 session["user_id"] = user_id
-                return redirect("/")
-        
+                return redirect("/"), flash("Kirjautuminen onnistui", "success")
         return "VIRHE: väärä tunnus tai salasana"
 
 
@@ -65,29 +70,82 @@ def login():
 def logout():
     del session["username"]
     del session["user_id"]
-    return redirect("/")
+    del session["csrf_token"]
+    return redirect("/"), flash("Uloskirjautuminen onnistui", "success")
 
 @app.route("/new_restaurant", methods=["GET", "POST"])
 def new_restaurants():
     require_login()
 
-    if request.method == "GET": 
+    if request.method == "GET":
+        form_data = session.pop("restaurant_form_data", None)
+        all_tags = restaurants.get_tags()
+        return render_template("new_restaurant.html", tags=all_tags, form_data=form_data)
 
-        return render_template("new_restaurant.html")
+    check_csrf()
+    user_id = session["user_id"]
+    action = request.form.get("action")
 
-    if request.method == "POST":
-        name = request.form["name"]
-        address = request.form["address"]
-        link = request.form["link"]
-        user_id = session["user_id"]
+    name = request.form.get("name", "").strip()
+    address = request.form.get("address", "").strip()
+    link = request.form.get("link", "").strip()
+    tags = request.form.getlist("tags")
 
+    if action == "add_tag":
+        new_tag_name = request.form.get("new_tag_name", "").strip().lower()
+        if not new_tag_name:
+            flash("Tagi ei voi olla tyhjä", "error")
+        elif new_tag_name in [tag['name'] for tag in restaurants.get_tags()]:
+            flash(f"Tagi '{new_tag_name}' on jo olemassa", "error")
+        else:
+            restaurants.create_tag(user_id, new_tag_name)
+            flash(f"Tagi '{new_tag_name}' lisätty", "success")
+
+        # ✅ Save current form state
+        session["restaurant_form_data"] = {
+            "name": name,
+            "address": address,
+            "link": link,
+            "selected_tags": tags
+        }
+        return redirect("/new_restaurant")
+
+    elif action == "add_restaurant":
         restaurants.add_restaurant(name, address, link, user_id)
-
         restaurant_id = restaurants.find_restaurant(name)[0][0]
-        
-        flash("Ravintola lisätty", "")
+        if tags:
+            for tag in tags:
+                restaurants.associate_tag_with_restaurant(restaurant_id, tag)
+
+        flash("Ravintola lisätty", "success")
         return redirect("/restaurants")
 
+
+@app.route("/create_tag", methods=["POST"])
+def create_tag_route():
+    require_login()
+    check_csrf()
+    user_id = session["user_id"]
+    new_tag_name = request.form["new_tag_name"].strip().lower()
+
+    if "from_new_restaurant" in request.form:
+        session["restaurant_form_data"] = {
+            "name": request.form.get("name", ""),
+            "address": request.form.get("address", ""),
+            "link": request.form.get("link", ""),
+            "selected_tags": request.form.getlist("tags")
+        }
+    
+    if not new_tag_name:
+        flash("Tagi ei voi olla tyhjä", "error")
+    elif new_tag_name in [tag['name'] for tag in restaurants.get_tags()]:
+        flash(f"Tagi '{new_tag_name}' on jo olemassa", "error")
+    else:
+        restaurants.create_tag(user_id, new_tag_name)
+        flash(f"Tagi '{new_tag_name}' lisätty", "success")
+
+    return redirect(request.referrer or "/")
+    
 @app.route("/restaurants")
 def show_restaurants():
     rest = restaurants.get_restaurants()
@@ -96,16 +154,64 @@ def show_restaurants():
 @app.route("/restaurant/<int:restaurant_id>")
 def show_restaurant(restaurant_id):
     restaurant = restaurants.get_restaurant(restaurant_id)
+    tags = restaurants.get_tags()
+    restaurant_tags = restaurants.get_restaurant_tags(restaurant_id)
     reviews = restaurants.get_reviews(restaurant_id)
-    return render_template("restaurant.html", restaurant=restaurant, reviews=reviews)
+    return render_template("restaurant.html", restaurant=restaurant, reviews=reviews, tags=tags, restaurant_tags=restaurant_tags)
+
+@app.route("/remove_tag_from_restaurant", methods=["POST"])
+def remove_tag_from_restaurant():
+    check_csrf()
+    restaurant_id = request.form["restaurant_id"]
+    tag_id = request.form["tag_id"]
+
+    restaurants.remove_tag_from_restaurant(restaurant_id, tag_id)
+    flash("Tagi poistettu ravintolasta", "")
+    return redirect(request.referrer or "/restaurants")
+
+
+@app.route("/add_tags/<int:restaurant_id>", methods=["POST"])
+def add_tags(restaurant_id):
+    require_login()
+    check_csrf()
+    tags = request.form.getlist("tags")
+    added, duplicates = 0, 0
+
+    if tags:
+        for tag in tags:
+            if restaurants.associate_tag_with_restaurant(restaurant_id, tag):
+                added += 1
+            else:
+                duplicates += 1
+
+    if added == 1 and duplicates == 1:
+        flash(f"{added} tagi lisätty, {duplicates} tagi jo lisätty.", "success")
+    elif duplicates == 1 and added > 1:
+        flash(f"{added} tagia lisätty, {duplicates} tagi jo lisätty.", "success")
+    elif duplicates > 1 and added == 1:
+        flash(f"{added} tagi lisätty, {duplicates} tagia jo lisätty.", "success")
+    elif duplicates > 1 and added > 1:
+        flash(f"{added} tagia lisätty, {duplicates} tagia jo lisätty.", "success")
+    elif added>1:
+        flash(f"{added} tagia lisätty.", "success")
+    elif added==1:
+        flash(f"{added} tagi lisätty.", "success")
+    elif duplicates:
+        flash(f"Kaikki valitut tagit jo lisätty.", "warning")
+    else:
+        flash("Ei valittuja tageja.", "warning")
+
+    return redirect(url_for("show_restaurant", restaurant_id=restaurant_id))
 
 @app.route("/edit_restaurant/<int:restaurant_id>")
 def edit_restaurant(restaurant_id):
+    require_login()
     restaurant = restaurants.get_restaurant(restaurant_id)
     return render_template("edit_restaurant.html", restaurant = restaurant)
 
 @app.route("/update_restaurant", methods=["POST"])
 def update_restaurant():
+    check_csrf()
     restaurant_id = request.form["id"]
     name = request.form["name"]
     address = request.form["address"]
@@ -120,10 +226,12 @@ def update_restaurant():
     
 @app.route("/remove_restaurant/<int:restaurant_id>", methods=["GET", "POST"])
 def remove_restaurant(restaurant_id):
+    require_login()
     restaurant = restaurants.get_restaurant(restaurant_id)
     if request.method == "GET":
         return render_template("remove_restaurant.html", restaurant = restaurant)
     if request.method == "POST":
+        check_csrf()
         restaurants.remove_restaurant(restaurant["id"])
         return redirect("/restaurants")
 
@@ -147,10 +255,12 @@ def search():
     
 @app.route("/add_review/<int:restaurant_id>", methods=["GET", "POST"])
 def add_review(restaurant_id):
+    require_login()
     if request.method == "GET":
         restaurant = restaurants.get_restaurant(restaurant_id)
         return render_template("add_review.html", restaurant = restaurant)
     if request.method == "POST":
+        check_csrf()
         comment = request.form["comment"]
         user_id = session["user_id"]
         rating = request.form["rating"]
@@ -160,12 +270,14 @@ def add_review(restaurant_id):
     
 @app.route("/edit_review/<int:review_id>")
 def edit_review(review_id):
+    require_login()
     review = restaurants.get_review(review_id)
     restaurant = restaurants.get_restaurant(review["restaurant_id"])
     return render_template("edit_review.html", review=review, restaurant=restaurant)
 
 @app.route("/update_review", methods = ["POST"])
 def update_review():
+    check_csrf()
     review_id= request.form["id"]
     rating = request.form["rating"]
     comment = request.form["comment"]
@@ -178,12 +290,14 @@ def update_review():
 
 @app.route("/remove_review/<int:review_id>", methods=["GET", "POST"])
 def remove_review(review_id):
+    require_login()
     if request.method == "GET":
         review = restaurants.get_review(review_id)
         restaurant = restaurants.get_restaurant(review["restaurant_id"])
         return render_template("remove_review.html", review=review, restaurant=restaurant)
     
     if request.method == "POST":
+        check_csrf()
         review = restaurants.get_review(review_id)
         restaurant_id = review["restaurant_id"]
         restaurants.remove_review(review_id)
@@ -192,7 +306,6 @@ def remove_review(review_id):
     
 @app.route("/user/<string:username>/")
 def show_user(username):
-    print(">>> show_user route called with:", username)
     user = users.get_user(username)  
     
     if not user:
@@ -202,6 +315,7 @@ def show_user(username):
     
     restaurants = users.get_user_restaurants(user_id)  
     reviews = users.get_user_reviews(user_id)  
+    tags = users.get_user_tags(user_id)
     
-    return render_template("user.html", user=user, reviews=reviews, restaurants=restaurants)
+    return render_template("user.html", user=user, reviews=reviews, restaurants=restaurants, tags=tags)
 

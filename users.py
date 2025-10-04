@@ -24,3 +24,13 @@ def get_user_restaurants(user_id):
              ORDER BY re.name"""
     result = db.query(sql, [user_id])
     return result if result else None
+
+def get_user_tags(user_id):
+    sql = """SELECT t.id, t.name
+             FROM tags t
+             JOIN users u ON t.user_id = u.id
+             WHERE u.id = ?
+             GROUP BY t.id
+             ORDER BY t.name"""
+    result = db.query(sql, [user_id])
+    return result if result else None

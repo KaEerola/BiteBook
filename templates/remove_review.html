@@ -4,6 +4,7 @@
     <p>
       Haluatko varmasti poistaa arvostelun {{ review.text }}?
     </p>
+    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}" />
     <input type="submit" name="continue" value="Jatka" />
 </form>
 <a href="/restaurant/{{ restaurant.id }}">

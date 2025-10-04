@@ -2,21 +2,36 @@
 {% block content %}
 <h2>Lisää ravintola</h2>
 <form action="/new_restaurant" method="post">
-    <p>
-        Nimi: <br />
-        <input type="text" name="name" />
-    </p>
-    <p>
-        Osoite: <br />
-        <input type="text" name="address" />
-    </p>
-    <p>
-        Nettisivu: <br />
-        <input type="text" name="link" />
-    </p>
-    <input type="submit" value="Lisää ravintola" />
+  <p>
+    Nimi: <br />
+    <input type="text" name="name" value="{{ form_data.name if form_data else '' }}" />
+  </p>
+  <p>
+    Osoite: <br />
+    <input type="text" name="address" value="{{ form_data.address if form_data else '' }}" />
+  </p>
+  <p>
+    Nettisivu: <br />
+    <input type="text" name="link" value="{{ form_data.link if form_data else '' }}" />
+  </p>
+
+  <h3>Valitse tagit:</h3>
+  {% for tag in tags %}
+    <input type="checkbox" name="tags" value="{{ tag.id }}"
+           {% if form_data and tag.id|string in form_data.selected_tags %}checked{% endif %}>
+    {{ tag.name }}<br>
+  {% endfor %}
+  <p>
+    <button type="submit" name="action" value="add_restaurant">Lisää ravintola</button>
+  </p>
+  <h3>Luo uusi tagi</h3>
+  <input type="text" name="new_tag_name" placeholder="Esim. vegaaninen" />
+
+  <p>
+    <button type="submit" name="action" value="add_tag">Lisää tagi</button>
+  </p>
+  <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}" />
 </form>
-<p>
-    <a href="/">Peruuta</a>
-</p>
+
+<p><a href="/">Peruuta</a></p>
 {% endblock %}

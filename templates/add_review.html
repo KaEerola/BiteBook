@@ -11,6 +11,7 @@
         <textarea name="comment" id="comment" rows="8" cols="60" maxlength="1000" required></textarea>
     </p>
     <input type="hidden" name="restaurant_id" value="{{ restaurant.id }}" />
+    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}" />
     <input type="submit" value="Lisää arvostelu" />
 </form>
 <p>

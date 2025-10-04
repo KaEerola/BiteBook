@@ -1,7 +1,4 @@
 {% extends "layout.html" %}
-
-{% block title %}{{ user.username }}{% endblock %}
-
 {% block content %}
 <h2>{{ user.username }}</h2>
     <p>Rekisteröitynyt: {{ user.created_at }}</p>
@@ -15,6 +12,12 @@
     {% else %}
     <p>Luotuja ravintoloita: 0</p>
     {% endif %}
+    {% if tags %}
+    <p>Luotuja tageja: {{ tags | count }}</p>
+    {% else %}
+    <p>Luotuja tageja: 0</p>
+    {% endif %}
+    
 
     {% if restaurants %}
         <h2>Lisätyt ravintolat</h2>
@@ -61,5 +64,24 @@
         </ul>
     {% else %}
         <p>Ei arvosteluja</p>
+    {% endif %}
+    {% if tags %}
+        <h2>Luodut tagit</h2>
+        <ul>
+        {% for tag in tags %}
+            <li>
+            {{ tag.name }}
+            {% if tag.user_id == session.user_id %}
+            <form action="/delete_tag" method="post" style="display:inline;">
+                <input type="hidden" name="tag_id" value="{{ tag.id }}">
+                <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}" />
+                <button type="submit" onclick="return confirm('Haluatko varmasti poistaa tagin?')">🗑️</button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Ei Luotuja tageja</p>
     {% endif %}
 {% endblock %}
