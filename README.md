@@ -15,10 +15,19 @@
 - Sovellukseen lisättyjen ravintoloiden tarkastelu on mahdollista
 - Ravintoloiden haku ravintolan nimien tai nimen osien perusteella mahdollista
 
-#3 välipalautus
+# 3 välipalautus
 - Käyttäjäsivut, joissa näkyy lisättyjen tietokohteiden määrä ja erikseen lisätyt tietokohteet
 - Tagi-järjestelmä, jonka avulla voidaan luoda tunnisteita ravintoloille ja poistaa niitä
 - Estetty sovelluksen CSRF-aukko
+
+# Sovelluksen testaus suurilla tietomäärillä
+sovellus testattu seuraavilla määrillä 
+<pre>user_count = 1000 </pre>
+<pre>restaurant_count = 10**5 </pre>
+<pre>tag_count = 20</pre>
+<pre>review_count = 10**6</pre>
+
+Ravintolat välilehden avaaminen kesti noin 0.15 sekuntia, myöskin käyttäjähaku ja ravintolahaku toimi hyvin.
   
 # Asennusohjeet
 Aluksi luo tiedosto database.db tiedoston schema.sql perusteella
