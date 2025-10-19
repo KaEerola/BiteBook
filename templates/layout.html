@@ -2,14 +2,13 @@
 <html>
 <head>
     <title>BiteBook</title>
+    <link rel="stylesheet" href="/static/main.css">
 </head> 
 
 <body>
-    <h1>BiteBook</h1>
+    <h1><a href="/">BiteBook</a></h1>
     <header style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-            
-            <a href="/">Etusivulle</a>
             <a href="/restaurants">Selaa ravintoloita</a>
             <a href="/search_restaurants">Etsi ravintolaa</a>
         {% if session.username %}
@@ -18,6 +17,7 @@
         </div>
         
         <div>
+            <a href="/search_users">Etsi käyttäjiä</a>
             {% if session.username %}
                 <a href="/user/{{ session.username }}">{{ session.username }}</a>
                 <a href="/logout">Kirjaudu ulos</a>
